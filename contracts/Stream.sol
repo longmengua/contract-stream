@@ -54,16 +54,17 @@ contract Stream is Ownable {
     {
         // declarations
         address _recipient = msg.sender;
+        uint256 _contractBalance = _token.balanceOf(address(this));
 
         // validation
         require(_isActive == 1, "the contract is inactive");
 
         // transfer
         _isActive = 2;
-        _token.transfer(_recipient, _total);
+        _token.transfer(_recipient, _contractBalance);
 
         // event
-        emit Stop(_recipient, _total);
+        emit Stop(_recipient, _contractBalance);
     }
 
     function activate(uint256 startTimestamp, uint256 endTimestamp)

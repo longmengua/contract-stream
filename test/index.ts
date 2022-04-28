@@ -13,6 +13,7 @@ enum Test {
   case7 = "user claim reward",
   case8 = "call init method after activate contract",
   case9 = "deactivate contract",
+  case10 = "deactivate contract after claim",
 }
 
 describe("Stream", function () {
@@ -316,6 +317,54 @@ describe("Stream", function () {
     const result = BigNumber.from((300000000 * (passed / period)).toFixed(0));
     await expect(availableReward.mul(100).div(result).toNumber()).to.lte(100); // difference should under 100
     await expect(availableReward.mul(100).div(result).toNumber()).to.gte(90); // difference should above 90
+
+    await expect(airdrop["deActivate"]()).to.emit(airdrop, "Stop");
+  });
+
+  it(`${Test.case10}`, async () => {
+    const now = new Date().getTime();
+    const todayTimestamp = new Date(new Date().toLocaleDateString()).getTime();
+    const milliseconds = 1000*60*60*24; // a day
+    const tomorrowTimestamp = todayTimestamp + milliseconds;
+    const yesterdayTimestamp = todayTimestamp - milliseconds;
+    const users: Array<{
+      account: string;
+      reward: string;
+    }> = [
+      {
+        account: owner.address,
+        reward: "300000000",
+      },
+      {
+        account: addr1.address,
+        reward: "300000000",
+      },
+    ];
+
+    await airdrop["init"](users);
+
+    const quantity: BigNumber = await airdrop["quantity"]();
+    // console.log('quantity', result1);
+    await expect(quantity.toString()).to.equal("2");
+
+    const total: BigNumber = await airdrop["total"]();
+    // console.log('total', result2);
+    await expect(total.toString()).to.equal("600000000");
+
+    await token["approve"](airdrop.address, "600000000");
+
+    await expect(airdrop["activate"](yesterdayTimestamp/1000, tomorrowTimestamp/1000)).to.emit(airdrop, "Fill");
+
+    await expect(await token["balanceOf"](airdrop.address)).to.equal("600000000");
+
+    const period = tomorrowTimestamp - yesterdayTimestamp;
+    const passed = now - yesterdayTimestamp;
+    const availableReward: BigNumber = await airdrop["availableReward"](owner.address);
+    const result = BigNumber.from((300000000 * (passed / period)).toFixed(0));
+    await expect(availableReward.mul(100).div(result).toNumber()).to.lte(100); // difference should under 100
+    await expect(availableReward.mul(100).div(result).toNumber()).to.gte(90); // difference should above 90
+
+    await expect(await airdrop["claim"]()).to.emit(airdrop, "Claim");
 
     await expect(airdrop["deActivate"]()).to.emit(airdrop, "Stop");
   });
