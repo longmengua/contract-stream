@@ -9,7 +9,7 @@ const bsc_testnet = {
 };
 
 const injected = new InjectedConnector({
-  supportedChainIds: [1, 3, 4, 5, 42, bsc_testnet.chainId],
+  supportedChainIds: [1, 3, 4, 5, 42, bsc_testnet.chainId, 80001],
 });
 
 const walletconnect = new WalletConnectConnector({

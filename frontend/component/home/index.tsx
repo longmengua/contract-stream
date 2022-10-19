@@ -1,8 +1,12 @@
+/* eslint-disable node/no-missing-import */
+/* eslint-disable node/no-unpublished-import */
+/* eslint-disable node/no-extraneous-import */
+/* eslint-disable node/no-unsupported-features/es-syntax */
 import stream from "../../../artifacts/contracts/Stream.sol/Stream.json";
 import token from "../../../artifacts/contracts/TestToken.sol/TestToken.json";
 import { Button, CircularProgress, TextField } from "@mui/material";
 import css from "./index.module.scss";
-import React, {useEffect, useState} from "react";
+import React, { useState } from "react";
 import Connector from "../connector";
 import { useWeb3React } from "@web3-react/core";
 import { BigNumber, Contract, ethers, Signer } from "ethers";
@@ -10,7 +14,13 @@ import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { DatePicker, LocalizationProvider } from "@mui/lab";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 
-const milliseconds = 1000*60*60*24; // a day
+const milliseconds = 1000 * 60 * 60 * 24; // a day
+
+const TokenInfo = {
+  name: "Prajna Token",
+  symbol: "PRT",
+  supply: "1000000000",
+};
 
 const Home = () => {
   const currentTimestamp = new Date(new Date().toLocaleDateString()).getTime();
@@ -19,7 +29,7 @@ const Home = () => {
     open: false,
     start: currentTimestamp,
     end: currentTimestamp + milliseconds,
-    token: "0x94C9aB606Bb4e8CbFAb94623784eBAb53eDF7Cd3",//
+    token: "", //
     contract: "", //
     quantity: "0",
     total: "0",
@@ -49,9 +59,9 @@ const Home = () => {
       const singer: Signer = library.getSigner(account);
 
       const factory = new ethers.ContractFactory(
-          stream.abi,
-          stream.bytecode,
-          singer,
+        stream.abi,
+        stream.bytecode,
+        singer
       );
 
       const deployedContract: Contract = await factory.deploy(tokenAddress);
@@ -66,7 +76,7 @@ const Home = () => {
     } catch (e) {
       console.error(e);
     }
-    return undefined
+    return undefined;
   };
 
   const deployToken = async (): Promise<string | undefined> => {
@@ -76,10 +86,14 @@ const Home = () => {
       const factory = new ethers.ContractFactory(
         token.abi,
         token.bytecode,
-        singer,
+        singer
       );
 
-      const deployedContract: Contract = await factory.deploy("Token", "Token", "10000000000000000000000000000");
+      const deployedContract: Contract = await factory.deploy(
+        TokenInfo.name,
+        TokenInfo.symbol,
+        TokenInfo.symbol
+      );
       console.log("deployedContract", deployedContract);
 
       await deployedContract.deployed();
@@ -92,7 +106,7 @@ const Home = () => {
     } catch (e) {
       console.error(e);
     }
-    return undefined
+    return undefined;
   };
 
   const initList = async () => {
@@ -117,13 +131,13 @@ const Home = () => {
         stream.abi,
         singer
       );
-      const transactionResponse: TransactionResponse = await contract["init"](
+      const transactionResponse: TransactionResponse = await contract.init(
         users
       );
       await transactionResponse.wait();
 
-      const quantity: BigNumber = await contract["quantity"]();
-      const total: BigNumber = await contract["total"]();
+      const quantity: BigNumber = await contract.quantity();
+      const total: BigNumber = await contract.total();
       setState((prevState) => ({
         ...prevState,
         total: total.toString(),
@@ -136,16 +150,12 @@ const Home = () => {
 
   const checkReward = async () => {
     const singer: Signer = library.getSigner(account);
-    const contract: Contract = new Contract(
-      state.contract,
-      stream.abi,
-      singer
-    );
+    const contract: Contract = new Contract(state.contract, stream.abi, singer);
 
     // todo: For Irene
     try {
-      const information: any = await contract["information"]();
-      const informationReward: any = await contract["informationReward"](account);
+      const information: any = await contract.information();
+      const informationReward: any = await contract.informationReward(account);
 
       setState((prevState) => ({
         ...prevState,
@@ -155,32 +165,34 @@ const Home = () => {
         remainReward: informationReward[3].toString(),
       }));
 
-      console.log('information', information);
-      console.log('informationReward', informationReward);
+      console.log("information", information);
+      console.log("informationReward", informationReward);
     } catch (e) {
       console.error(e);
     }
 
-    try{
+    try {
       const tokenContract: Contract = new Contract(
-          state.token,
-          token.abi,
-          singer
+        state.token,
+        token.abi,
+        singer
       );
-      tokenContract['balanceOf'](account).then((balance: BigNumber) => {
+      tokenContract.balanceOf(account).then((balance: BigNumber) => {
         // console.log('balance', balance);
         setState((prevState) => ({
           ...prevState,
           balance: balance.toString(),
         }));
       });
-      tokenContract['allowance'](account, state.contract).then((allowance: BigNumber)=>{
-        // console.log('allowance', allowance);
-        setState((prevState) => ({
-          ...prevState,
-          allowance: allowance.toString(),
-        }));
-      });
+      tokenContract
+        .allowance(account, state.contract)
+        .then((allowance: BigNumber) => {
+          // console.log('allowance', allowance);
+          setState((prevState) => ({
+            ...prevState,
+            allowance: allowance.toString(),
+          }));
+        });
     } catch (e) {
       console.error(e);
     }
@@ -188,14 +200,10 @@ const Home = () => {
 
   const claim = async () => {
     const singer: Signer = library.getSigner(account);
-    const contract: Contract = new Contract(
-        state.contract,
-        stream.abi,
-        singer,
-    );
+    const contract: Contract = new Contract(state.contract, stream.abi, singer);
 
     try {
-      await contract["claim"]();
+      await contract.claim();
     } catch (e) {
       console.error(e);
     }
@@ -203,16 +211,15 @@ const Home = () => {
 
   const approve = async () => {
     const singer: Signer = library.getSigner(account);
-    const contract: Contract = new Contract(
-      state.token,
-      token.abi,
-      singer
-    );
+    const contract: Contract = new Contract(state.token, token.abi, singer);
 
     try {
       // max_int https://forum.openzeppelin.com/t/using-the-maximum-integer-in-solidity/3000
       // uint256 MAX_INT = 115792089237316195423570985008687907853269984665640564039457584007913129639935
-      const t = await contract['approve'](state.contract, '115792089237316195423570985008687907853269984665640564039457584007913129639935')
+      const t = await contract.approve(
+        state.contract,
+        "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+      );
       await t.wait();
     } catch (e) {
       console.error(e);
@@ -221,15 +228,10 @@ const Home = () => {
 
   const activateContract = async () => {
     const singer: Signer = library.getSigner(account);
-    const contract: Contract = new Contract(
-        state.contract,
-        stream.abi,
-        singer
-    );
-
+    const contract: Contract = new Contract(state.contract, stream.abi, singer);
 
     try {
-      const t = await contract["activate"](state.start/1000, state.end/1000);
+      const t = await contract.activate(state.start / 1000, state.end / 1000);
       await t.wait();
     } catch (e) {
       console.error(e);
@@ -274,28 +276,28 @@ const Home = () => {
       {account &&
         (loading.deploy ? (
           <CircularProgress />
-        ) : state.token != '' ? (
-            <Button
-                variant="outlined"
-                onClick={async () => {
-                  setLoading((prevState) => ({ ...prevState, deploy: true }));
-                  await deploy(state.token);
-                  setLoading((prevState) => ({ ...prevState, deploy: false }));
-                }}
-            >
-              Deploy airdrop contract
-            </Button>
-        ): (
-            <Button
-                variant="outlined"
-                onClick={async () => {
-                  setLoading((prevState) => ({ ...prevState, deploy: true }));
-                  await deployToken();
-                  setLoading((prevState) => ({ ...prevState, deploy: false }));
-                }}
-            >
-              Deploy token contract
-            </Button>
+        ) : state.token !== "" ? (
+          <Button
+            variant="outlined"
+            onClick={async () => {
+              setLoading((prevState) => ({ ...prevState, deploy: true }));
+              await deploy(state.token);
+              setLoading((prevState) => ({ ...prevState, deploy: false }));
+            }}
+          >
+            Deploy airdrop contract
+          </Button>
+        ) : (
+          <Button
+            variant="outlined"
+            onClick={async () => {
+              setLoading((prevState) => ({ ...prevState, deploy: true }));
+              await deployToken();
+              setLoading((prevState) => ({ ...prevState, deploy: false }));
+            }}
+          >
+            Deploy token contract
+          </Button>
         ))}
       {state.contract && account && (
         <div>
@@ -340,18 +342,18 @@ const Home = () => {
             </LocalizationProvider>
           </div>
           {loading.check ? (
-              <CircularProgress />
+            <CircularProgress />
           ) : (
-              <Button
-                  variant="outlined"
-                  onClick={async () => {
-                    setLoading((prevState) => ({ ...prevState, check: true }));
-                    await checkReward();
-                    setLoading((prevState) => ({ ...prevState, check: false }));
-                  }}
-              >
-                reload
-              </Button>
+            <Button
+              variant="outlined"
+              onClick={async () => {
+                setLoading((prevState) => ({ ...prevState, check: true }));
+                await checkReward();
+                setLoading((prevState) => ({ ...prevState, check: false }));
+              }}
+            >
+              reload
+            </Button>
           )}
           <span style={{ padding: "5px" }} />
           {loading.init ? (
